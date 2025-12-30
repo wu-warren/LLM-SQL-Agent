@@ -16,11 +16,9 @@
 from typing import Dict
 
 
-def get_repair_strategy(
-    error_type: str, previous_sql_query: str, observation: Dict
-) -> Dict:
+def get_repair_strategy(error_type: str, previous_sql_query: str, observation: Dict) -> Dict:
     """
-    given an error type and execution observation, 
+    given an error type and execution observation,
     return a repair strategy for the LLM's next attempt
     """
 
@@ -35,7 +33,7 @@ def get_repair_strategy(
             "constraints": [
                 "Use only existing columns",
                 "verify joins explicitly",
-            ]
+            ],
         }
     if error_type == "table_not_found":
         return {
@@ -53,8 +51,7 @@ def get_repair_strategy(
         return {
             "action": "revise_sql_query",
             "instructions": (
-                "Aggregation error detected. "
-                "Ensure all non-aggregated columns appear in GROUP BY."
+                "Aggregation error detected. Ensure all non-aggregated columns appear in GROUP BY."
             ),
             "constraints": [
                 "Every selected non-aggregate column must be grouped",
@@ -65,8 +62,7 @@ def get_repair_strategy(
         return {
             "action": "revise_sql_query",
             "instructions": (
-                "Column reference is ambiguous. "
-                "Qualify column names with table aliases."
+                "Column reference is ambiguous. Qualify column names with table aliases."
             ),
             "constraints": [
                 "Use table aliases for all column references",
@@ -76,5 +72,5 @@ def get_repair_strategy(
     # Fallback
     return {
         "action": "abort",
-        "reason": f"No repair strategy available for error_type='{error_type}'"
+        "reason": f"No repair strategy available for error_type='{error_type}'",
     }

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import List, Any, Optional
+from typing import Any, List, Optional
+
 import psycopg2.errors
 
 

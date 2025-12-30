@@ -1,5 +1,7 @@
 import os
 import time
+import json
+
 import psycopg2
 
 
@@ -13,10 +15,7 @@ def connect():
     )
 
 
-def create_run(nl_query: str,
-               created_at: time,
-               provider: str | None,
-               model: str | None) -> int:
+def create_run(nl_query: str, created_at: time, provider: str | None, model: str | None) -> int:
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -32,10 +31,7 @@ def create_run(nl_query: str,
             return run_id
 
 
-def log_step(
-    run_id: int, iteration: int, 
-    sql_query: str | None, obs: dict, elapsed_ms: int
-):
+def log_step(run_id: int, iteration: int, sql_query: str | None, obs: dict, elapsed_ms: int, llm_output: dict | None):
     with connect() as conn, conn.cursor() as cur:
         cur.execute(
             """
@@ -47,8 +43,10 @@ def log_step(
                 error_type,
                 message,
                 row_count,
-                elapsed_ms)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                elapsed_ms,
+                rows,
+                llm_output)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
             (
                 run_id,
@@ -59,23 +57,27 @@ def log_step(
                 obs.get("message"),
                 obs.get("row_count"),
                 elapsed_ms,
+                json.dumps(obs.get("rows"), default=str),
+                json.dumps(llm_output, default=str),
             ),
         )
 
 
-def finish_run(run_id: int, status: str, final_obs: dict):
+def finish_run(run_id: int, status: str, final_obs: dict, sql_query: str | None) -> int:
     try:
         with connect() as conn, conn.cursor() as cur:
             cur.execute(
                 """
                 UPDATE agent_runs
-                SET status = %s, final_error_type = %s, final_message = %s
+                SET status = %s, final_error_type = %s, final_message = %s, final_rows = %s, final_query = %s
                 WHERE run_id = %s;
                 """,
                 (
                     status,
                     final_obs.get("error_type"),
                     final_obs.get("message"),
+                    json.dumps(final_obs.get("rows"), default=str),
+                    sql_query,
                     run_id,
                 ),
             )
@@ -91,4 +93,3 @@ def finish_run(run_id: int, status: str, final_obs: dict):
         except Exception:
             pass
         raise
- 

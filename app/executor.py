@@ -1,8 +1,9 @@
-from dataclasses import asdict
-import psycopg2
 import os
-from app.errors import classify_error, ErrorResult, SuccessResult
+from dataclasses import asdict
 
+import psycopg2
+
+from app.errors import ErrorResult, SuccessResult, classify_error
 
 MAX_ROWS_RETURNED = 5
 QUERY_TIMEOUT_MS = 5_000
@@ -64,7 +65,7 @@ def execute_sql(sql_query: str, iteration: int) -> dict:
                         hint="Remove DDL/DML statements",
                     )
 
-        # convert dataclass to dict before passing to agent loop 
+        # convert dataclass to dict before passing to agent loop
         return asdict(result)
 
     except Exception as exc:

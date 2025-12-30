@@ -11,8 +11,7 @@ SQL_JSON_SCHEMA: Dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
     "properties": {
-        "sql_query": {
-            "type": "string"},
+        "sql_query": {"type": "string"},
         "reasoning": {
             "type": "string",
         },
@@ -68,24 +67,23 @@ def build_prompt(
 
     # Give LLM an example
     parts.append(
-        "\nOutput format example:\n"
-        '{"sql_query":"SELECT ...","reasoning":"...","confidence":0.7}'
+        '\nOutput format example:\n{"sql_query":"SELECT ...","reasoning":"...","confidence":0.7}'
     )
 
     return "\n".join(parts)
 
 
-def validate_and_normalize(prompt, llm_output: Dict[str, Any]
-                           ) -> Dict[str, Any]:
+def validate_and_normalize(prompt, llm_output: Dict[str, Any]) -> Dict[str, Any]:
     # minimal validation
 
     for k in ("sql_query", "reasoning", "confidence"):
         if k not in llm_output:
-            print(prompt)
+            print(llm_output)
             raise ValueError(f"LLM output missing key: {k}")
 
     sql_query = str(llm_output["sql_query"]).strip()
-    if not sql_query.lower().startswith("select"):
+    if not sql_query.lower().startswith("select") and not (sql_query is None):
+        print(llm_output)
         raise ValueError("Model return non-SELECT SQL query, blocked.")
 
     conf = float(llm_output["confidence"])

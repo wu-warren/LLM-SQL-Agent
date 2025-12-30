@@ -1,8 +1,9 @@
-from app.executor import execute_sql
-from app.repair import get_repair_strategy
-from app.llm import generate_sql_query_with_llm
-from app.logging_db import create_run, log_step, finish_run
 import time
+
+from app.executor import execute_sql
+from app.llm import generate_sql_query_with_llm
+from app.logging_db import create_run, finish_run, log_step
+from app.repair import get_repair_strategy
 
 # from app.errors import ERROR_TYPE_MAP
 
@@ -55,7 +56,7 @@ order_payments.order_id -> orders.order_id
 #         GROUP BY customer_id;
 #         """
 
-#     # If we have a repair strategy, follow it (simulate an LLM using 
+#     # If we have a repair strategy, follow it (simulate an LLM using
 # feedback)
 #     if repair and repair.get("action") == "revise_sql_query":
 #         # For this dataset, a correct "revenue per customer"
@@ -85,7 +86,7 @@ def run_agent_loop(nl_query: str) -> dict:
     model = "gemini-2.5-flash"
 
     # first attempt to generate query
-    sql_query = generate_sql_query_with_llm(
+    llm_output = generate_sql_query_with_llm(
         nl_query=nl_query,
         schema_context=schema_context,
         previous_sql_query=previous_sql_query,
@@ -93,24 +94,24 @@ def run_agent_loop(nl_query: str) -> dict:
         repair=repair,
         provider=provider,
         model=model,
-    )["sql_query"]
+    )
+
+    sql_query = llm_output["sql_query"]
+
 
     # Creating a run
     run_start = time.time()
 
-    run_id = create_run(nl_query=nl_query,
-                        created_at=run_start,
-                        provider=provider,
-                        model=model)
+    run_id = create_run(nl_query=nl_query, created_at=run_start, provider=provider, model=model)
 
     observation = execute_sql(sql_query, iteration)
 
     # Logging first step
     elapsed_ms = int((time.time() - run_start) * 1000)
-    log_step(run_id, iteration, sql_query, observation, elapsed_ms)
+    log_step(run_id, iteration, sql_query, observation, elapsed_ms, llm_output)
 
     if observation["status"] == "success":
-        finish_run(run_id, "success", observation)
+        finish_run(run_id, "success", observation, sql_query)
         return observation
 
     while iteration < MAX_ITERATIONS and observation["status"] == "error":
@@ -147,7 +148,7 @@ def run_agent_loop(nl_query: str) -> dict:
 
         iteration_start = time.time()
         # generate revised query
-        sql_query = generate_sql_query_with_llm(
+        llm_output = generate_sql_query_with_llm(
             nl_query=nl_query,
             schema_context=schema_context,
             previous_sql_query=previous_sql_query,
@@ -155,22 +156,23 @@ def run_agent_loop(nl_query: str) -> dict:
             repair=repair,
             provider=provider,
             model=model,
-        )["sql_query"]
+        )
+
+        sql_query = llm_output["sql_query"]
 
         observation = execute_sql(sql_query, iteration)
 
         elapsed_ms = int((time.time() - iteration_start) * 1000)
-        log_step(run_id, iteration, sql_query, observation, elapsed_ms)
-
+        log_step(run_id, iteration, sql_query, observation, elapsed_ms, llm_output)
         # Success
         if observation["status"] == "success":
-            finish_run(run_id, "success", observation)
+            finish_run(run_id, "success", observation, sql_query)
             return observation
 
-    finish_run(run_id, "error", observation)
+    finish_run(run_id, "error", observation, sql_query)
     return {
         "status": "error",
         "message": "Query failed after multiple attempts",
         "last_observation": observation,
-        "query": sql_query
+        "query": sql_query,
     }
