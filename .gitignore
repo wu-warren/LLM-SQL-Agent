@@ -17,6 +17,8 @@ logs/
 
 # Data
 data/
+db/
+evaluation/
 
 # Examples/tests
 app/example.py

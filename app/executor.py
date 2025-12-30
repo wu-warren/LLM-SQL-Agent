@@ -11,12 +11,18 @@ QUERY_TIMEOUT_MS = 5_000
 
 
 def get_connection():
+    # return psycopg2.connect(
+    #     host=os.getenv("DB_HOST", "localhost"),
+    #     port=int(os.getenv("DB_PORT", "5433")),
+    #     dbname=os.getenv("DB_NAME", "llm_sql_agent"),
+    #     user=os.getenv("DB_USER", "postgres"),
+    #     password=os.getenv("DB_PASSWORD"),
     return psycopg2.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        port=int(os.getenv("DB_PORT", "5433")),
-        dbname=os.getenv("DB_NAME", "llm_sql_agent"),
-        user=os.getenv("DB_USER", "postgres"),
-        password=os.getenv("DB_PASSWORD"),
+        host=os.environ["SUPABASE_DB_HOST"],
+        port=int(os.environ.get("SUPABASE_DB_PORT", "5432")),
+        dbname=os.environ.get("SUPABASE_DB_NAME", "postgres"),
+        user=os.environ.get("SUPABASE_DB_USER", "postgres"),
+        password=os.environ["SUPABASE_DB_PASSWORD"],
     )
 
 

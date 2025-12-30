@@ -1,6 +1,8 @@
 from app.executor import execute_sql
 from app.repair import get_repair_strategy
 from app.llm import generate_sql_query_with_llm
+from app.logging_db import create_run, log_step, finish_run
+import time
 
 # from app.errors import ERROR_TYPE_MAP
 
@@ -79,6 +81,9 @@ def run_agent_loop(nl_query: str) -> dict:
     previous_sql_query = None
     repair = None
 
+    provider = "gemini"
+    model = "gemini-2.5-flash"
+
     # first attempt to generate query
     sql_query = generate_sql_query_with_llm(
         nl_query=nl_query,
@@ -86,11 +91,26 @@ def run_agent_loop(nl_query: str) -> dict:
         previous_sql_query=previous_sql_query,
         previous_observation=previous_observation,
         repair=repair,
+        provider=provider,
+        model=model,
     )["sql_query"]
+
+    # Creating a run
+    run_start = time.time()
+
+    run_id = create_run(nl_query=nl_query,
+                        created_at=run_start,
+                        provider=provider,
+                        model=model)
 
     observation = execute_sql(sql_query, iteration)
 
+    # Logging first step
+    elapsed_ms = int((time.time() - run_start) * 1000)
+    log_step(run_id, iteration, sql_query, observation, elapsed_ms)
+
     if observation["status"] == "success":
+        finish_run(run_id, "success", observation)
         return observation
 
     while iteration < MAX_ITERATIONS and observation["status"] == "error":
@@ -125,6 +145,7 @@ def run_agent_loop(nl_query: str) -> dict:
         previous_sql_query = sql_query
         iteration += 1
 
+        iteration_start = time.time()
         # generate revised query
         sql_query = generate_sql_query_with_llm(
             nl_query=nl_query,
@@ -132,14 +153,21 @@ def run_agent_loop(nl_query: str) -> dict:
             previous_sql_query=previous_sql_query,
             previous_observation=previous_observation,
             repair=repair,
+            provider=provider,
+            model=model,
         )["sql_query"]
 
         observation = execute_sql(sql_query, iteration)
 
+        elapsed_ms = int((time.time() - iteration_start) * 1000)
+        log_step(run_id, iteration, sql_query, observation, elapsed_ms)
+
         # Success
         if observation["status"] == "success":
+            finish_run(run_id, "success", observation)
             return observation
 
+    finish_run(run_id, "error", observation)
     return {
         "status": "error",
         "message": "Query failed after multiple attempts",
