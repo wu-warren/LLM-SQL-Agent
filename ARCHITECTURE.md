@@ -5,9 +5,7 @@ Build a backend service that improves the reliability of LLM-generated SQL by re
 
 ## Non-goals
 - Building a full multi-table agent
-- Competing with SOTA research
 - Query optimization
-- Frontend product UI
 
 ## Data Flow
 User Query
@@ -16,14 +14,18 @@ User Query
 → Error classification
 → LLM repair
 → Retry
-→ Return results + metrics
+→ Logs output in Supabase
 
 ## Modules
-- main.py: API + orchestration
+- main.py: API only (for now)
+- agent_loop.py: Runs the whole agent loop
 - executor.py: SQL execution
-- errors.py: error taxonomy
+- errors.py: error classification
 - repair.py: LLM repair logic
-- schema.py: schema ingestion
+- llm.py: Prompts LLM (Gemini) to generate SQL query using natural language
+- logging_db.py: Logs agent loop runs and prompting steps into Supabase DB
+
+
 
 ## Evaluation
-Compare baseline vs corrected execution using a fixed query set.
+Compare baseline vs corrected execution using a fixed query set. (WIP)
