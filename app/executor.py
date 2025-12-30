@@ -70,8 +70,5 @@ def execute_sql(sql_query: str, iteration: int) -> dict:
             iteration=iteration,
             error_type=error_type,
             message=message,
-            hint="Check schema, joins, and aggregation"
-            if error_type != "syntax_error"
-            else "Fix SQL syntax",
         )
         return asdict(result)
