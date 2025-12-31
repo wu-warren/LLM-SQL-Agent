@@ -98,7 +98,6 @@ def run_agent_loop(nl_query: str) -> dict:
 
     sql_query = llm_output["sql_query"]
 
-
     # Creating a run
     run_start = time.time()
 

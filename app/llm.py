@@ -82,7 +82,7 @@ def validate_and_normalize(prompt, llm_output: Dict[str, Any]) -> Dict[str, Any]
             raise ValueError(f"LLM output missing key: {k}")
 
     sql_query = str(llm_output["sql_query"]).strip()
-    if not sql_query.lower().startswith("select") and not (sql_query is None):
+    if not sql_query.lower().startswith("select") and sql_query is not None:
         print(llm_output)
         raise ValueError("Model return non-SELECT SQL query, blocked.")
 

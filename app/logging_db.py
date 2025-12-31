@@ -1,6 +1,6 @@
+import json
 import os
 import time
-import json
 
 import psycopg2
 
@@ -31,7 +31,14 @@ def create_run(nl_query: str, created_at: time, provider: str | None, model: str
             return run_id
 
 
-def log_step(run_id: int, iteration: int, sql_query: str | None, obs: dict, elapsed_ms: int, llm_output: dict | None):
+def log_step(
+    run_id: int,
+    iteration: int,
+    sql_query: str | None,
+    obs: dict,
+    elapsed_ms: int,
+    llm_output: dict | None,
+):
     with connect() as conn, conn.cursor() as cur:
         cur.execute(
             """
